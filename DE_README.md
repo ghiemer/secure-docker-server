@@ -72,7 +72,7 @@ Sobald du eingeloggt bist, klone dieses Repo:
 
 ```bash
 apt-get update && apt-get install -y git make
-git clone https://github.com/DEIN-USER/secure-docker-server.git
+git clone https://github.com/ghiemer/secure-docker-server.git
 cd secure-docker-server
 ```
 
