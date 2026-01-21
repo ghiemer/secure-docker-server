@@ -17,15 +17,15 @@ preflight:
 	@./scripts/00-preflight.sh
 
 system:
-	$(call MSG_START, "Updating System & Dependencies")
+	$(call MSG_START, "Updating System and Dependencies")
 	@./scripts/01-system.sh
 
 swap:
-	$(call MSG_START, "Configuring Memory & Swap")
+	$(call MSG_START, "Configuring Memory and Swap")
 	@./scripts/02-swap.sh
 
 user:
-	$(call MSG_START, "Setting up Admin User & SSH Lock")
+	$(call MSG_START, "Setting up Admin User and SSH Lock")
 	@./scripts/03-user-safe.sh
 
 harden:
