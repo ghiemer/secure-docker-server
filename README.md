@@ -12,23 +12,13 @@ This repository transforms a fresh Ubuntu 24.04 server into a **hardened fortres
 *   ✅ **SSH Safe-Lock:** Interactive SSH key setup with "Anti-Lockout Guarantee".
 *   ✅ **Firewall:** UFW pre-configured (only 22, 80, 443).
 *   ✅ **Docker Security:** Daemon Hardening, No-New-Privileges, Log Limits.
+*   ✅ **Interactive Port Selection:** Choose your own secure SSH port (e.g., 22222) instead of the default 22.
+*   ✅ **Final Verification:** Runs a comprehensive audit (User, Port, Firewall, Docker) to confirm system integrity before finishing.
 *   ✅ **Docker Compose:** Automatically installs the modern Docker Compose V2 Plugin (`docker compose`).
 *   ✅ **Watchdog:** Monitors for accidentally opened ports.
 *   ✅ **Logging:** Writes a logfile (`setup.log`) and masks secrets (*****).
 
-## 📋 Prerequisites
 
-To ensure the installation runs smoothly, the following conditions must be met:
-
-*   **OS:** A fresh **Ubuntu 24.04 LTS** (recommended).
-*   **User:** Root access (via SSH).
-*   **Tools:** `git` and `make` are required for the setup.
-    
-    Installation:
-    ```bash
-    apt-get update && apt-get install -y git make
-    ```
-*   **Docker:** Must **NOT** be pre-installed (the script handles this cleanly and securely for you).
 
 ## 🚀 Installation
 
@@ -45,7 +35,7 @@ To ensure the installation runs smoothly, the following conditions must be met:
 > **Our Support:** Once you spend €10, we receive €10 credit as a thank you for this project. **Win-Win!** 🤝
 
 Create a server at Hetzner (or another provider):
-*   **Image:** Ubuntu 24.04 LTS
+*   **Image:** Fresh **Ubuntu 24.04 LTS** (Important! Docker must NOT be pre-installed)
 *   **Firewall (Recommended):** Create a firewall in the Hetzner Cloud Panel that only allows ports 22, 80, 443, and ICMP.
     
     *   **Official Guide:** [Hetzner Firewall Docs](https://docs.hetzner.com/robot/dedicated-server/firewall/)

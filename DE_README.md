@@ -11,24 +11,14 @@ Dieses Repository verwandelt einen frischen Ubuntu 24.04 Server in eine **gehär
 *   ✅ **OS Hardening:** Sysctl Tweaks, Auditd, Secure Swap (verschlüsselt).
 *   ✅ **SSH Safe-Lock:** Interaktive Einrichtung von SSH-Keys mit "Anti-Aussperr-Garantie".
 *   ✅ **Firewall:** UFW vorkonfiguriert (nur 22, 80, 443).
-*   ✅ **Docker Security:** Daemon Hardening, No-New-Privileges, Log-Limits.
+*   ✅ **Docker Security:** Daemon Hardening, No-New-Privileges, Log Limits.
+*   ✅ **Interaktive Port-Wahl:** Wähle selbst einen sicheren SSH-Port (z.B. 22222) statt Standard 22.
+*   ✅ **Finaler Sicherheits-Check:** Führt am Ende einen kompletten Audit durch (User, Port, Firewall, Docker), bevor das Setup als "Fertig" markiert wird.
 *   ✅ **Docker Compose:** Installiert automatisch das moderne Docker Compose V2 Plugin (`docker compose`).
 *   ✅ **Watchdog:** Überwacht versehentlich geöffnete Ports.
 *   ✅ **Logging:** Schreibt ein Logfile (`setup.log`) und maskiert Secrets (*****).
 
-## 📋 Voraussetzungen
 
-Damit die Installation reibungslos durchläuft, müssen folgende Bedingungen erfüllt sein:
-
-*   **OS:** Ein frisches **Ubuntu 24.04 LTS** (empfohlen).
-*   **User:** Root-Zugriff (via SSH).
-*   **Tools:** `git` und `make` werden für das Setup benötigt.
-    
-    Installation:
-    ```bash
-    apt-get update && apt-get install -y git make
-    ```
-*   **Docker:** Muss **NICHT** vorinstalliert sein (das Skript erledigt das sauber und sicher für dich).
 
 ## 🚀 Installation
 
@@ -44,7 +34,7 @@ Damit die Installation reibungslos durchläuft, müssen folgende Bedingungen erf
 > **Unser Support:** Sobald du 10€ investierst, erhalten wir als Dankeschön 10€ für dieses Projekt. **Win-Win!** 🤝
 
 Erstelle dann einen Server bei Hetzner (oder einem anderen Provider):
-*   **Image:** Ubuntu 24.04 LTS
+*   **Image:** Frisches **Ubuntu 24.04 LTS** (Wichtig! Docker darf NICHT vorinstalliert sein).
 *   **Firewall (Empfohlen):** Im Hetzner Cloud Panel eine Firewall erstellen.
     
     *   **Offizielle Anleitung:** [Hetzner Firewall Docs](https://docs.hetzner.com/de/robot/dedicated-server/firewall/)
