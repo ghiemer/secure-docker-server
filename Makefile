@@ -7,7 +7,7 @@ MSG_START = @echo -e "\n🔹 $(1)..."
 MSG_OK    = @echo -e "✅ $(1) OK"
 MSG_ERR   = @echo -e "🚨 ERROR: $(1)"
 
-install: preflight system swap user harden docker watchdog
+install: preflight system swap user harden docker watchdog verify
 	@echo "------------------------------------------------"
 	@echo "🎉 SERVER READY. REBOOT REQUIRED."
 
@@ -37,6 +37,8 @@ harden:
 	
 	# 2. Fail2Ban
 	@cp configs/jail.local /etc/fail2ban/jail.local
+	@SSH_PORT=$$(cat /root/.server_setup_port 2>/dev/null || echo 22); \
+	 sed -i "s/^port *= *ssh/port = $$SSH_PORT/" /etc/fail2ban/jail.local
 	@systemctl restart fail2ban
 	
 	# 3. Auditd Rules
@@ -50,7 +52,8 @@ harden:
 	@ufw --force reset > /dev/null
 	@ufw default deny incoming
 	@ufw default allow outgoing
-	@ufw allow 22/tcp
+	@SSH_PORT=$$(cat /root/.server_setup_port 2>/dev/null || echo 22); \
+	 ufw allow $$SSH_PORT/tcp
 	@ufw allow 80/tcp
 	@ufw allow 443/tcp
 	@echo "y" | ufw enable
@@ -65,8 +68,16 @@ watchdog:
 	$(call MSG_START, "Installing Security Watchdog")
 	@cp watchdog/port-monitor.sh /usr/local/bin/security-watchdog
 	@chmod +x /usr/local/bin/security-watchdog
+	@SSH_PORT=$$(cat /root/.server_setup_port 2>/dev/null || echo 22); \
+	 sed -i "s/ALLOWED_PORTS=\"22/ALLOWED_PORTS=\"$$SSH_PORT/" /usr/local/bin/security-watchdog
 	@cp watchdog/watchdog.service /etc/systemd/system/
 	@cp watchdog/watchdog.timer /etc/systemd/system/
 	@systemctl daemon-reload
 	@systemctl enable --now watchdog.timer
 	$(call MSG_OK, "Watchdog active")
+
+verify:
+	$(call MSG_START, "Running Final System Audit")
+	@chmod +x scripts/99-verify.sh
+	@./scripts/99-verify.sh
+

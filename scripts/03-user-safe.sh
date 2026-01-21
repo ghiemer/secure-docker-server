@@ -64,7 +64,7 @@ EOF
 
 echo -e "${GREEN}👉 HANDLUNG ERFORDERLICH:${NC}"
 echo "1. Öffne ein NEUES Terminal auf deinem PC."
-echo "2. Verbinde dich:  ssh -p 2222 $NEW_USER@$(curl -s ifconfig.me)"
+echo "2. Verbinde dich:  ssh -p 2222 $NEW_USER@$(curl -4 -s ifconfig.me)"
 echo "3. Wenn der Login klappt, führe im neuen Fenster aus:  touch /tmp/ssh_verified"
 echo ""
 echo "⏳ Warte auf Verifikation (Max 120 Sekunden)..."
@@ -90,7 +90,30 @@ fi
 # 4. Finalisieren
 echo "🔒 Sperre SSH (Root Login OFF, Password OFF)..."
 mv /etc/ssh/sshd_config_verify /etc/ssh/sshd_config
-sed -i 's/Port 2222/Port 22/' /etc/ssh/sshd_config
+
+# Port Auswahl
+echo ""
+echo "---------------------------------------------------"
+read -p "Soll der Standard SSH Port 22 verwendet werden? [J/n]: " PORT_CHOICE
+SSH_PORT=22
+
+if [[ "$PORT_CHOICE" =~ ^[nN]$ ]]; then
+    while true; do
+        read -p "Bitte neuen SSH Port eingeben (1024-65535): " SSH_PORT
+        if [[ "$SSH_PORT" =~ ^[0-9]+$ ]] && [ "$SSH_PORT" -ge 1024 ] && [ "$SSH_PORT" -le 65535 ]; then
+            echo "✅ Neuer SSH Port: $SSH_PORT"
+            break
+        else
+            echo "⚠️ Ungültiger Port. Bitte eine Zahl zwischen 1024 und 65535."
+        fi
+    done
+fi
+
+# Speichere Port für Makefile (UFW etc)
+echo "$SSH_PORT" > /root/.server_setup_port
+
+# Konfiguriere Port
+sed -i "s/Port 2222/Port $SSH_PORT/" /etc/ssh/sshd_config
 systemctl restart ssh
 kill $(pgrep -f "sshd_config_verify") || true
 rm -f /tmp/ssh_verified

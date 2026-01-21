@@ -27,7 +27,7 @@ mask_secrets() {
 # Wir nutzen 'script', um TTY (Interaktivität) zu erhalten und trotzdem zu loggen
 # Da 'script' alles aufzeichnet, müssen wir das Logfile danach bereinigen (Masking)
 if command -v script >/dev/null; then
-    script -q -c "make install" /dev/null | tee >(mask_secrets >> "$LOGFILE")
+    script -q -e -c "make install" /dev/null | tee >(mask_secrets >> "$LOGFILE")
     EXIT_CODE=${PIPESTATUS[0]}
 else
     # Fallback falls 'script' fehlt (unwahrscheinlich auf Ubuntu)
@@ -36,9 +36,24 @@ else
 fi
 
 echo ""
-if [ $EXIT_CODE -eq 0 ]; then
+    # Konfigurationen auslesen
+    TARGET_USER=$(cat /root/.server_setup_user 2>/dev/null || echo "Unknown")
+    TARGET_PORT=$(cat /root/.server_setup_port 2>/dev/null || echo "22")
+    DOCKER_VERSION=$(docker --version 2>/dev/null || echo "Not Installed")
+
     echo -e "${GREEN}✅ SETUP SUCCESSFULLY COMPLETED!${NC}"
-    echo "Please check $LOGFILE for details."
+    echo "---------------------------------------------------------"
+    echo -e "👤 **Benutzer:**       ${GREEN}$TARGET_USER${NC}"
+    echo -e "🔑 **SSH Port:**       ${GREEN}$TARGET_PORT${NC} (Wichtig für nächsten Login!)"
+    echo -e "🐳 **Docker:**         $DOCKER_VERSION"
+    echo -e "🔥 **Firewall:**       Aktiv (Ports: $TARGET_PORT, 80, 443 allow)"
+    echo -e "🛡️  **Security:**       Fail2Ban active, Swap encrypted, Kernel hardened"
+    echo "---------------------------------------------------------"
+    echo -e "👇 **NÄCHSTE SCHRITTE:**"
+    echo "1. Server neustarten: 'reboot'"
+    echo "2. Neu verbinden:     'ssh -p $TARGET_PORT $TARGET_USER@<DEINE-IP>'"
+    echo "---------------------------------------------------------"
+    echo "Please check $LOGFILE for full logs."
 else
     echo -e "${RED}🚨 SETUP FAILED!${NC}"
     echo "Check $LOGFILE for the error message."
