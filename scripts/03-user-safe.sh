@@ -27,12 +27,26 @@ echo "$NEW_USER" > /root/.server_setup_user
 
 # 2. Key abfragen
 echo ""
-echo "Bitte füge jetzt deinen SSH PUBLIC KEY ein (beginnt mit ssh-rsa oder ssh-ed25519):"
-read -r SSH_KEY
+echo "---------------------------------------------------"
+if [ -f /root/.ssh/authorized_keys ] && [ -s /root/.ssh/authorized_keys ]; then
+    echo "🔑 VORHANDENER SSH KEY GEFUNDEN (z.B. von Hetzner)."
+    read -p "Möchtest du diesen Key für '$NEW_USER' verwenden? [J/n]: " USE_EXISTING
+else
+    USE_EXISTING="n"
+fi
 
-if [[ ! "$SSH_KEY" =~ ^ssh- ]]; then
-    echo -e "${RED}🚨 ERROR: Das sieht nicht nach einem gültigen SSH Key aus!${NC}"
-    exit 1
+if [[ "$USE_EXISTING" =~ ^[nN]$ ]]; then
+    echo ""
+    echo "Bitte füge jetzt deinen SSH PUBLIC KEY ein (beginnt mit ssh-rsa oder ssh-ed25519):"
+    read -r SSH_KEY
+    
+    if [[ ! "$SSH_KEY" =~ ^ssh- ]]; then
+        echo -e "${RED}🚨 ERROR: Das sieht nicht nach einem gültigen SSH Key aus!${NC}"
+        exit 1
+    fi
+else
+    echo "✅ Übernehme vorhandene Keys von root..."
+    SSH_KEY=$(cat /root/.ssh/authorized_keys)
 fi
 
 mkdir -p /home/$NEW_USER/.ssh
