@@ -1,0 +1,22 @@
+// Nur Sicherheitsupdates automatisch installieren
+Unattended-Upgrade::Allowed-Origins {
+    "${distro_id}:${distro_codename}-security";
+    // "${distro_id}:${distro_codename}-updates"; // Optional: Normale Updates auch
+};
+
+Unattended-Upgrade::Package-Blacklist {
+    // Docker wird manuell geupdated, um Version-Mismatch zu verhindern
+    "docker-ce";
+    "docker-ce-cli";
+    "containerd.io";
+};
+
+// Müll entfernen
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+
+// Automatisch Rebooten? 
+// Bei Produktionsservern "false", du willst den Reboot steuern.
+// Wenn du "true" setzt, rebootet er z.B. um 04:00 Uhr, wenn Kernel-Updates da waren.
+Unattended-Upgrade::Automatic-Reboot "false";
+Unattended-Upgrade::Automatic-Reboot-Time "04:00";

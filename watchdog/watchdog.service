@@ -1,0 +1,11 @@
+# /etc/systemd/system/watchdog.service
+[Unit]
+Description=Security Port Compliance Watchdog
+After=network.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/security-watchdog
+# Optional: Set user if script doesn't need root (ss usually needs root for full process info, but basic port scan works with nobody)
+# For this setup, root is safer to ensure we see everything.
+User=root

@@ -1,0 +1,19 @@
+# Logs
+*.log
+install_*.log
+
+# Temp files
+tmp/
+.server_setup_user
+
+# SSH Keys (falls lokal generiert)
+*.pub
+*.key
+id_rsa
+id_ed25519
+
+# System files
+.DS_Store
+Thumbs.db
+
+CONCEPT/
