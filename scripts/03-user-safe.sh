@@ -43,6 +43,7 @@ else
             echo "❌ Passwörter stimmen nicht überein oder sind leer. Versuch es nochmal."
         fi
     done
+fi
 
 # Speichere User für spätere Docker Group
 echo "$NEW_USER" > /root/.server_setup_user
