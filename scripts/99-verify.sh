@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x  # Enable full command tracing for logging
 
 # Farben
 GREEN='\033[0;32m'

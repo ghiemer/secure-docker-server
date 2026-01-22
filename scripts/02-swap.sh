@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x  # Enable full command tracing for logging
 
 # RAM in MB ermitteln
 RAM_MB=$(free -m | awk '/^Mem:/{print $2}')
@@ -34,9 +35,11 @@ else
     chmod 600 /cryptswap
 
     # Crypttab Eintrag (Formatiert bei jedem Boot neu mit Zufallskey -> Daten weg beim Reboot)
+    echo "   ✍️  Adding entry to /etc/crypttab"
     echo "cryptswap /cryptswap /dev/urandom swap,offset=8,cipher=aes-xts-plain64,size=256" >> /etc/crypttab
 
     # Fstab Eintrag
+    echo "   ✍️  Adding entry to /etc/fstab"
     echo "/dev/mapper/cryptswap none swap sw 0 0" >> /etc/fstab
 
     echo "✅ Encrypted Swap konfiguriert (Aktiv nach Reboot)."

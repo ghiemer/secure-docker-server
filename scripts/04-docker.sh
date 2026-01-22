@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x  # Enable full command tracing for logging
 
 echo "🐳 Installiere Docker Engine..."
 
@@ -11,7 +12,8 @@ else
 fi
 
 # 2. Hardening Config anwenden
-echo "   Kopiere Hardened Daemon Config..."
+# 2. Hardening Config anwenden
+echo "   ✍️  Copying configs/daemon.json -> /etc/docker/daemon.json"
 mkdir -p /etc/docker
 cp configs/daemon.json /etc/docker/daemon.json
 

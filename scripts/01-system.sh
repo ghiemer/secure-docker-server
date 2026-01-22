@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x  # Enable full command tracing for logging
 
 echo "📦 System-Update und Installation der Abhängigkeiten..."
 

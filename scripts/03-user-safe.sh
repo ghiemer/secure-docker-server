@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x  # Enable full command tracing for logging
 
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
@@ -50,6 +51,7 @@ else
 fi
 
 mkdir -p /home/$NEW_USER/.ssh
+echo "   ✍️  Writing key to /home/$NEW_USER/.ssh/authorized_keys"
 echo "$SSH_KEY" > /home/$NEW_USER/.ssh/authorized_keys
 chown -R $NEW_USER:$NEW_USER /home/$NEW_USER/.ssh
 chmod 700 /home/$NEW_USER/.ssh
@@ -82,6 +84,7 @@ echo -e "\n${YELLOW}🧪 SICHERHEITSPRÜFUNG STARTET...${NC}"
 echo "Wir starten einen temporären SSH Server auf PORT 2222."
 echo ""
 
+echo "   ✍️  Creating temporary config: /etc/ssh/sshd_config_verify"
 cat > /etc/ssh/sshd_config_verify <<EOF
 Port 2222
 Protocol 2
