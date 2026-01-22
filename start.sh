@@ -24,15 +24,23 @@ mask_secrets() {
 }
 
 # Wrapper um Make aufzurufen
-# Wir nutzen 'script', um TTY (Interaktivität) zu erhalten und trotzdem zu loggen
-# Da 'script' alles aufzeichnet, müssen wir das Logfile danach bereinigen (Masking)
-if command -v script >/dev/null; then
-    script -q -e -c "make install" /dev/null | tee >(mask_secrets >> "$LOGFILE")
-    EXIT_CODE=${PIPESTATUS[0]}
+# Wir leiten stderr (Trace Output durch set -x) NUR in das Logfile.
+# Wir leiten stdout (Echo Output) in das Terminal UND das Logfile.
+# 'script' wird nicht mehr benötigt, da wir Streams direkt trennen.
+
+if command -v make >/dev/null; then
+    # Start: ( stdout -> tee ) & ( stderr -> log )
+    # Syntax: Command > >(tee -a log) 2>> log
+    # mask_secrets wird dazwischen geschaltet
+    
+    ( make install ) \
+        > >(tee -a >(mask_secrets >> "$LOGFILE")) \
+        2> >(mask_secrets >> "$LOGFILE")
+        
+    EXIT_CODE=$?
 else
-    # Fallback falls 'script' fehlt (unwahrscheinlich auf Ubuntu)
-    make install 2>&1 | tee >(mask_secrets >> "$LOGFILE")
-    EXIT_CODE=${PIPESTATUS[0]}
+    echo "🚨 ERROR: 'make' command not found."
+    EXIT_CODE=1
 fi
 
 echo ""

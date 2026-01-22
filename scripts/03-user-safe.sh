@@ -15,7 +15,8 @@ echo "⚠️  WARNUNG: Du benötigst deinen SSH Public Key!"
 echo ""
 
 # 1. User anlegen
-read -p "Gewünschter Username (z.B. admin): " NEW_USER
+echo -n "Gewünschter Username (z.B. admin): "
+read -r NEW_USER
 if id "$NEW_USER" &>/dev/null; then
     echo "ℹ️  User $NEW_USER existiert bereits."
 else
@@ -31,7 +32,8 @@ echo ""
 echo "---------------------------------------------------"
 if [ -f /root/.ssh/authorized_keys ] && [ -s /root/.ssh/authorized_keys ]; then
     echo "🔑 VORHANDENER SSH KEY GEFUNDEN (z.B. von Hetzner)."
-    read -p "Möchtest du diesen Key für '$NEW_USER' verwenden? [J/n]: " USE_EXISTING
+    echo -n "Möchtest du diesen Key für '$NEW_USER' verwenden? [J/n]: "
+    read -r USE_EXISTING
 else
     USE_EXISTING="n"
 fi
@@ -61,12 +63,14 @@ chmod 600 /home/$NEW_USER/.ssh/authorized_keys
 # 3. Port Auswahl (Vorziehen für Klarheit)
 echo ""
 echo "---------------------------------------------------"
-read -p "Soll der Standard SSH Port 22 verwendet werden? [J/n]: " PORT_CHOICE
+echo -n "Soll der Standard SSH Port 22 verwendet werden? [J/n]: "
+read -r PORT_CHOICE
 SSH_PORT=22
 
 if [[ "$PORT_CHOICE" =~ ^[nN]$ ]]; then
     while true; do
-        read -p "Bitte neuen SSH Port eingeben (1024-65535): " SSH_PORT
+        echo -n "Bitte neuen SSH Port eingeben (1024-65535): "
+        read -r SSH_PORT
         if [[ "$SSH_PORT" =~ ^[0-9]+$ ]] && [ "$SSH_PORT" -ge 1024 ] && [ "$SSH_PORT" -le 65535 ]; then
             echo "✅ Neuer SSH Port: $SSH_PORT"
             break
@@ -137,7 +141,7 @@ echo "Das Skript wartet hier..."
 
 # Loop until verified or aborted
 while true; do
-    read -r -p ""
+    read -r
 
     if [ -f /root/setup_verified ]; then
         echo -e "${GREEN}✅ Login & Sudo Verifiziert!${NC}"
@@ -145,7 +149,8 @@ while true; do
     else
         echo -e "\n${RED}🚨 DATEI NICHT GEFUNDEN! (/root/setup_verified)${NC}"
         echo "Hast du 'sudo touch /root/setup_verified' erfolgreich ausgeführt?"
-        read -p "Möchtest du es nochmal versuchen? [J/n]: " RETRY
+        echo -n "Möchtest du es nochmal versuchen? [J/n]: "
+        read -r RETRY
         if [[ "$RETRY" =~ ^[nN]$ ]]; then
             echo "Abbruch durch Benutzer."
             kill $(pgrep -f "sshd_config_verify") || true
