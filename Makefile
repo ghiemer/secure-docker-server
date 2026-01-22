@@ -42,6 +42,7 @@ harden:
 	@systemctl restart fail2ban
 	
 	# 3. Auditd Rules
+	@mkdir -p /etc/docker
 	@cp configs/audit.rules /etc/audit/rules.d/audit.rules
 	@augenrules --load
 	
