@@ -29,7 +29,7 @@ user:
 	@./scripts/03-user-safe.sh
 
 harden:
-	$(call MSG_START, "Hardening Host (Firewall, Kernel, Fail2Ban, Auditd)")
+	$(call MSG_START, "Hardening Host: Firewall - Kernel - Fail2Ban - Auditd")
 	
 	# 1. Sysctl
 	@cp configs/sysctl.conf /etc/sysctl.d/99-security.conf
