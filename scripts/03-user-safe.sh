@@ -104,28 +104,28 @@ echo "2. Verbinde dich:  ssh -p 2222 $NEW_USER@$(curl -4 -s ifconfig.me)"
 echo "3. Prüfe deine Rechte: 'sudo whoami' (Muss 'root' zurückgeben)"
 echo "4. WENN alles klappt, führe im neuen Fenster aus:  touch /tmp/ssh_verified"
 echo ""
-echo "⚠️  WICHTIG: Das Skript wartet, bis DU bestätigst."
-read -p "Drücke [ENTER], sobald du erfolgreich eingeloggt bist und die Datei erstellt hast..."
 
-if [ ! -f /tmp/ssh_verified ]; then
-    echo -e "\n${RED}🚨 DATEI NICHT GEFUNDEN! (/tmp/ssh_verified)${NC}"
-    echo "Sicher, dass der Login geklappt hat?"
-    read -p "Möchtest du es nochmal versuchen? [J/n]: " RETRY
-    if [[ "$RETRY" =~ ^[nN]$ ]]; then
-        echo "Abbruch durch Benutzer."
-        kill $(pgrep -f "sshd_config_verify") || true
-        exit 1
+# Loop until verified or aborted
+while true; do
+    echo "⚠️  WICHTIG: Das Skript wartet, bis DU bestätigst."
+    read -p "Drücke [ENTER], sobald du erfolgreich eingeloggt bist und die Datei erstellt hast..."
+
+    if [ -f /tmp/ssh_verified ]; then
+        echo -e "${GREEN}✅ Login Verifiziert!${NC}"
+        break
+    else
+        echo -e "\n${RED}🚨 DATEI NICHT GEFUNDEN! (/tmp/ssh_verified)${NC}"
+        echo "Sicher, dass der Login geklappt hat? (Prüfe: 'ls -l /tmp/ssh_verified')"
+        read -p "Möchtest du es nochmal versuchen? [J/n]: " RETRY
+        if [[ "$RETRY" =~ ^[nN]$ ]]; then
+            echo "Abbruch durch Benutzer."
+            kill $(pgrep -f "sshd_config_verify") || true
+            exit 1
+        fi
+        echo "🔄 Erneuter Versuch..."
+        echo ""
     fi
-    # Simple retry loop handled by user simply creating the file and pressing enter again? 
-    # For simplicity, if check fails, we give one chance or just exit. 
-    # Let's make it a simple check. If missing, fail.
-    # User can restart script easily.
-    echo "Bitte starte das Skript neu, wenn du bereit bist."
-    kill $(pgrep -f "sshd_config_verify") || true
-    exit 1
-fi
-
-echo -e "${GREEN}✅ Login Verifiziert!${NC}"
+done
 
 # 5. Finalisieren
 echo "🔒 Sperre SSH (Root Login OFF, Password OFF, Port $SSH_PORT)..."
