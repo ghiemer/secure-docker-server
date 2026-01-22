@@ -52,7 +52,7 @@ harden:
 	@echo "   ✍️  Copying audit.rules -> /etc/audit/rules.d/audit.rules"
 	@cp configs/audit.rules /etc/audit/rules.d/audit.rules
 	@echo "   🔄 Loading Audit rules..."
-	@augenrules --load
+	@augenrules --load || true
 	
 	# 4. Unattended Upgrades Config
 	@echo "   ✍️  Copying 50unattended-upgrades -> /etc/apt/apt.conf.d/50unattended-upgrades"

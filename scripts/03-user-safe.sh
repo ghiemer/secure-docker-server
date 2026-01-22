@@ -92,8 +92,15 @@ echo -e "\n${YELLOW}🧪 SICHERHEITSPRÜFUNG STARTET...${NC}"
 # If user chose custom port (e.g. 22222), we use that to verify firewall/routing works for it.
 if [ "$SSH_PORT" -eq 22 ]; then
     VERIFY_PORT=2222
+    echo "ℹ️  Da du Port 22 gewählt hast (auf dem wir gerade verbunden sind),"
+    echo "    nutzen wir für den Test kurzzeitig Port 2222, um Konflikte zu vermeiden."
 else
     VERIFY_PORT=$SSH_PORT
+fi
+
+# Ensure UFW allows the verification port (in case UFW is already active)
+if command -v ufw >/dev/null; then
+    ufw allow "$VERIFY_PORT"/tcp >/dev/null 2>&1 || true
 fi
 
 echo "Wir starten einen temporären SSH Server auf PORT $VERIFY_PORT."
@@ -170,5 +177,10 @@ sed -i "s/Port 2222/Port $SSH_PORT/" /etc/ssh/sshd_config
 systemctl restart ssh
 kill $(pgrep -f "sshd_config_verify") || true
 rm -f /tmp/ssh_verified
+
+# Cleanup temporary firewall rule
+if command -v ufw >/dev/null; then
+    ufw delete allow "$VERIFY_PORT"/tcp >/dev/null 2>&1 || true
+fi
 
 echo "✅ SSH Hardening abgeschlossen."
