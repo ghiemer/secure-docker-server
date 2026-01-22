@@ -55,7 +55,29 @@ chown -R $NEW_USER:$NEW_USER /home/$NEW_USER/.ssh
 chmod 700 /home/$NEW_USER/.ssh
 chmod 600 /home/$NEW_USER/.ssh/authorized_keys
 
-# 3. Verifikation
+
+# 3. Port Auswahl (Vorziehen für Klarheit)
+echo ""
+echo "---------------------------------------------------"
+read -p "Soll der Standard SSH Port 22 verwendet werden? [J/n]: " PORT_CHOICE
+SSH_PORT=22
+
+if [[ "$PORT_CHOICE" =~ ^[nN]$ ]]; then
+    while true; do
+        read -p "Bitte neuen SSH Port eingeben (1024-65535): " SSH_PORT
+        if [[ "$SSH_PORT" =~ ^[0-9]+$ ]] && [ "$SSH_PORT" -ge 1024 ] && [ "$SSH_PORT" -le 65535 ]; then
+            echo "✅ Neuer SSH Port: $SSH_PORT"
+            break
+        else
+            echo "⚠️ Ungültiger Port. Bitte eine Zahl zwischen 1024 und 65535."
+        fi
+    done
+fi
+# Speichere Port für Makefile (UFW etc)
+echo "$SSH_PORT" > /root/.server_setup_port
+
+
+# 4. Verifikation
 echo -e "\n${YELLOW}🧪 SICHERHEITSPRÜFUNG STARTET...${NC}"
 echo "Wir starten einen temporären SSH Server auf PORT 2222."
 echo ""
@@ -79,54 +101,37 @@ EOF
 echo -e "${GREEN}👉 HANDLUNG ERFORDERLICH:${NC}"
 echo "1. Öffne ein NEUES Terminal auf deinem PC."
 echo "2. Verbinde dich:  ssh -p 2222 $NEW_USER@$(curl -4 -s ifconfig.me)"
-echo "3. Wenn der Login klappt, führe im neuen Fenster aus:  touch /tmp/ssh_verified"
+echo "3. Prüfe deine Rechte: 'sudo whoami' (Muss 'root' zurückgeben)"
+echo "4. WENN alles klappt, führe im neuen Fenster aus:  touch /tmp/ssh_verified"
 echo ""
-echo "⏳ Warte auf Verifikation (Max 120 Sekunden)..."
-
-count=0
-while [ $count -lt 120 ]; do
-    if [ -f /tmp/ssh_verified ]; then
-        echo -e "${GREEN}✅ Login Verifiziert!${NC}"
-        break
-    fi
-    sleep 1
-    ((count++))
-    echo -n "."
-done
+echo "⚠️  WICHTIG: Das Skript wartet, bis DU bestätigst."
+read -p "Drücke [ENTER], sobald du erfolgreich eingeloggt bist und die Datei erstellt hast..."
 
 if [ ! -f /tmp/ssh_verified ]; then
-    echo -e "\n${RED}🚨 TIMEOUT! Verifikation fehlgeschlagen.${NC}"
-    echo "Änderungen werden verworfen. Dein aktueller Root-Zugang bleibt erhalten."
+    echo -e "\n${RED}🚨 DATEI NICHT GEFUNDEN! (/tmp/ssh_verified)${NC}"
+    echo "Sicher, dass der Login geklappt hat?"
+    read -p "Möchtest du es nochmal versuchen? [J/n]: " RETRY
+    if [[ "$RETRY" =~ ^[nN]$ ]]; then
+        echo "Abbruch durch Benutzer."
+        kill $(pgrep -f "sshd_config_verify") || true
+        exit 1
+    fi
+    # Simple retry loop handled by user simply creating the file and pressing enter again? 
+    # For simplicity, if check fails, we give one chance or just exit. 
+    # Let's make it a simple check. If missing, fail.
+    # User can restart script easily.
+    echo "Bitte starte das Skript neu, wenn du bereit bist."
     kill $(pgrep -f "sshd_config_verify") || true
     exit 1
 fi
 
-# 4. Finalisieren
-echo "🔒 Sperre SSH (Root Login OFF, Password OFF)..."
+echo -e "${GREEN}✅ Login Verifiziert!${NC}"
+
+# 5. Finalisieren
+echo "🔒 Sperre SSH (Root Login OFF, Password OFF, Port $SSH_PORT)..."
 mv /etc/ssh/sshd_config_verify /etc/ssh/sshd_config
 
-# Port Auswahl
-echo ""
-echo "---------------------------------------------------"
-read -p "Soll der Standard SSH Port 22 verwendet werden? [J/n]: " PORT_CHOICE
-SSH_PORT=22
-
-if [[ "$PORT_CHOICE" =~ ^[nN]$ ]]; then
-    while true; do
-        read -p "Bitte neuen SSH Port eingeben (1024-65535): " SSH_PORT
-        if [[ "$SSH_PORT" =~ ^[0-9]+$ ]] && [ "$SSH_PORT" -ge 1024 ] && [ "$SSH_PORT" -le 65535 ]; then
-            echo "✅ Neuer SSH Port: $SSH_PORT"
-            break
-        else
-            echo "⚠️ Ungültiger Port. Bitte eine Zahl zwischen 1024 und 65535."
-        fi
-    done
-fi
-
-# Speichere Port für Makefile (UFW etc)
-echo "$SSH_PORT" > /root/.server_setup_port
-
-# Konfiguriere Port
+# Konfiguriere Port final
 sed -i "s/Port 2222/Port $SSH_PORT/" /etc/ssh/sshd_config
 systemctl restart ssh
 kill $(pgrep -f "sshd_config_verify") || true

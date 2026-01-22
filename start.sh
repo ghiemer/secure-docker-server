@@ -36,6 +36,8 @@ else
 fi
 
 echo ""
+
+if [ $EXIT_CODE -eq 0 ]; then
     # Konfigurationen auslesen
     TARGET_USER=$(cat /root/.server_setup_user 2>/dev/null || echo "Unknown")
     TARGET_PORT=$(cat /root/.server_setup_port 2>/dev/null || echo "22")
