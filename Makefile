@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := install
+.PHONY: install preflight system swap user harden docker watchdog verify
 
 # Emoji Helpers
 MSG_START = @echo -e "\n🔹 $(1)..."

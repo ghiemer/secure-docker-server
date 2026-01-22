@@ -79,14 +79,25 @@ fi
 echo "$SSH_PORT" > /root/.server_setup_port
 
 
+
 # 4. Verifikation
 echo -e "\n${YELLOW}🧪 SICHERHEITSPRÜFUNG STARTET...${NC}"
-echo "Wir starten einen temporären SSH Server auf PORT 2222."
+
+# Determine Verification Port
+# If user chose 22, we CANNOT use 22 for the test server (collision). Use 2222.
+# If user chose custom port (e.g. 22222), we use that to verify firewall/routing works for it.
+if [ "$SSH_PORT" -eq 22 ]; then
+    VERIFY_PORT=2222
+else
+    VERIFY_PORT=$SSH_PORT
+fi
+
+echo "Wir starten einen temporären SSH Server auf PORT $VERIFY_PORT."
 echo ""
 
 echo "   ✍️  Creating temporary config: /etc/ssh/sshd_config_verify"
 cat > /etc/ssh/sshd_config_verify <<EOF
-Port 2222
+Port $VERIFY_PORT
 Protocol 2
 HostKey /etc/ssh/ssh_host_rsa_key
 HostKey /etc/ssh/ssh_host_ecdsa_key
@@ -102,31 +113,46 @@ EOF
 /usr/sbin/sshd -f /etc/ssh/sshd_config_verify
 
 echo -e "${GREEN}👉 HANDLUNG ERFORDERLICH:${NC}"
-echo "1. Öffne ein NEUES Terminal auf deinem PC."
-echo "2. Verbinde dich:  ssh -p 2222 $NEW_USER@$(curl -4 -s ifconfig.me)"
-echo "3. Prüfe deine Rechte: 'sudo whoami' (Muss 'root' zurückgeben)"
-echo "4. WENN alles klappt, führe im neuen Fenster aus:  touch /tmp/ssh_verified"
 echo ""
+echo "#####################################################################"
+echo "#                                                                   #"
+echo "#  1. Öffne ein NEUES Terminal auf deinem PC (nicht hier drinnen!)  #"
+echo "#                                                                   #"
+echo "#  2. Kopiere diesen Befehl und führe ihn im neuen Fenster aus :    #"
+echo "#                                                                   #"
+echo "   ssh -p $VERIFY_PORT $NEW_USER@$(curl -4 -s ifconfig.me)"
+echo "#                                                                   #"
+echo "#  3. Prüfe deine SUDO-Rechte (WICHTIG!):                           #"
+echo "#                                                                   #"
+echo "#     Führe diesen Befehl aus, um das Setup zu bestätigen:          #"
+echo "#                                                                   #"
+echo "   sudo touch /root/setup_verified"
+echo "#                                                                   #"
+echo "#     (Wenn das klappt, hast du erfolgreich Sudo-Rechte)"            #"
+echo "#                                                                   #"
+echo "#####################################################################"
+echo ""
+echo "Drücke [ENTER], sobald du die Datei '/root/setup_verified' erstellt hast."
+echo "Das Skript wartet hier..."
 
 # Loop until verified or aborted
 while true; do
-    echo "⚠️  WICHTIG: Das Skript wartet, bis DU bestätigst."
-    read -p "Drücke [ENTER], sobald du erfolgreich eingeloggt bist und die Datei erstellt hast..."
+    read -r -p ""
 
-    if [ -f /tmp/ssh_verified ]; then
-        echo -e "${GREEN}✅ Login Verifiziert!${NC}"
+    if [ -f /root/setup_verified ]; then
+        echo -e "${GREEN}✅ Login & Sudo Verifiziert!${NC}"
         break
     else
-        echo -e "\n${RED}🚨 DATEI NICHT GEFUNDEN! (/tmp/ssh_verified)${NC}"
-        echo "Sicher, dass der Login geklappt hat? (Prüfe: 'ls -l /tmp/ssh_verified')"
+        echo -e "\n${RED}🚨 DATEI NICHT GEFUNDEN! (/root/setup_verified)${NC}"
+        echo "Hast du 'sudo touch /root/setup_verified' erfolgreich ausgeführt?"
         read -p "Möchtest du es nochmal versuchen? [J/n]: " RETRY
         if [[ "$RETRY" =~ ^[nN]$ ]]; then
             echo "Abbruch durch Benutzer."
             kill $(pgrep -f "sshd_config_verify") || true
+            rm -f /root/setup_verified
             exit 1
         fi
-        echo "🔄 Erneuter Versuch..."
-        echo ""
+        echo "🔄 Warte erneut. Drücke [ENTER] wenn bereit..."
     fi
 done
 
