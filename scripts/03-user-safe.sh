@@ -84,30 +84,25 @@ echo "$SSH_PORT" > /root/.server_setup_port
 
 
 
-# 4. Verifikation
+
+
+# 4. Verifikation ("Live" Test)
 echo -e "\n${YELLOW}🧪 SICHERHEITSPRÜFUNG STARTET...${NC}"
 
-# Determine Verification Port
-# If user chose 22, we CANNOT use 22 for the test server (collision). Use 2222.
-# If user chose custom port (e.g. 22222), we use that to verify firewall/routing works for it.
-if [ "$SSH_PORT" -eq 22 ]; then
-    VERIFY_PORT=2222
-    echo "ℹ️  Da du Port 22 gewählt hast (auf dem wir gerade verbunden sind),"
-    echo "    nutzen wir für den Test kurzzeitig Port 2222, um Konflikte zu vermeiden."
-else
-    VERIFY_PORT=$SSH_PORT
-fi
+# Verification Port IST der gewählte Port
+VERIFY_PORT=$SSH_PORT
 
-# Ensure UFW allows the verification port (in case UFW is already active)
-if command -v ufw >/dev/null; then
-    ufw allow "$VERIFY_PORT"/tcp >/dev/null 2>&1 || true
-fi
-
-echo "Wir starten einen temporären SSH Server auf PORT $VERIFY_PORT."
+echo "Wir testen die neue Konfiguration direkt am laufenden SSH-Server."
+echo "Deine aktuelle Verbindung bleibt bestehen (Reload statt Restart)."
 echo ""
 
-echo "   ✍️  Creating temporary config: /etc/ssh/sshd_config_verify"
-cat > /etc/ssh/sshd_config_verify <<EOF
+# 1. Backup Current Config
+echo "   📦 Backing up current config -> /etc/ssh/sshd_config.bak"
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+
+# 2. Write NEW Config directly to production file
+echo "   ✍️  Writing new hardened config -> /etc/ssh/sshd_config"
+cat > /etc/ssh/sshd_config <<EOF
 Port $VERIFY_PORT
 Protocol 2
 HostKey /etc/ssh/ssh_host_rsa_key
@@ -121,7 +116,18 @@ AllowUsers $NEW_USER
 Subsystem sftp /usr/lib/openssh/sftp-server
 EOF
 
-/usr/sbin/sshd -f /etc/ssh/sshd_config_verify
+# 3. Reload SSH to apply changes (Does NOT kill active connections)
+echo "   🔄 Reloading SSH configuration..."
+systemctl reload ssh
+
+# Define Restore Function (Revert to backup)
+revert_config() {
+    echo ""
+    echo -e "${YELLOW}⏪ REVERTING sshd_config to previous state...${NC}"
+    cp /etc/ssh/sshd_config.bak /etc/ssh/sshd_config
+    systemctl reload ssh
+    echo "✅ Configuration restored. You can fix issues and run the script again."
+}
 
 echo -e "${GREEN}👉 HANDLUNG ERFORDERLICH:${NC}"
 echo ""
@@ -152,6 +158,10 @@ while true; do
 
     if [ -f /root/setup_verified ]; then
         echo -e "${GREEN}✅ Login & Sudo Verifiziert!${NC}"
+        # Success! Finalize.
+        rm -f /etc/ssh/sshd_config.bak
+        rm -f /root/setup_verified
+        echo "✅ SSH Hardening dauerhaft aktiviert."
         break
     else
         echo -e "\n${RED}🚨 DATEI NICHT GEFUNDEN! (/root/setup_verified)${NC}"
@@ -160,27 +170,9 @@ while true; do
         read -r RETRY
         if [[ "$RETRY" =~ ^[nN]$ ]]; then
             echo "Abbruch durch Benutzer."
-            kill $(pgrep -f "sshd_config_verify") || true
-            rm -f /root/setup_verified
+            revert_config
             exit 1
         fi
         echo "🔄 Warte erneut. Drücke [ENTER] wenn bereit..."
     fi
 done
-
-# 5. Finalisieren
-echo "🔒 Sperre SSH (Root Login OFF, Password OFF, Port $SSH_PORT)..."
-mv /etc/ssh/sshd_config_verify /etc/ssh/sshd_config
-
-# Konfiguriere Port final
-sed -i "s/Port 2222/Port $SSH_PORT/" /etc/ssh/sshd_config
-systemctl restart ssh
-kill $(pgrep -f "sshd_config_verify") || true
-rm -f /tmp/ssh_verified
-
-# Cleanup temporary firewall rule
-if command -v ufw >/dev/null; then
-    ufw delete allow "$VERIFY_PORT"/tcp >/dev/null 2>&1 || true
-fi
-
-echo "✅ SSH Hardening abgeschlossen."
