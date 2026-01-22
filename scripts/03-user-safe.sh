@@ -20,9 +20,29 @@ read -r NEW_USER
 if id "$NEW_USER" &>/dev/null; then
     echo "ℹ️  User $NEW_USER existiert bereits."
 else
-    adduser --gecos "" "$NEW_USER"
+    adduser --disabled-password --gecos "" "$NEW_USER"
     usermod -aG sudo "$NEW_USER"
-fi
+    
+    # Passwort für Sudo setzen
+    echo ""
+    echo "🔐 BITTE SETZE EIN PASSWORT FÜR DEN ADMIN-USER (für sudo Befehle):"
+    while true; do
+        echo -n "Passwort: "
+        read -s PASS1
+        echo ""
+        echo -n "Wiederholen: "
+        read -s PASS2
+        echo ""
+        
+        if [ "$PASS1" == "$PASS2" ] && [ ! -z "$PASS1" ]; then
+            echo "$NEW_USER:$PASS1" | chpasswd
+            echo "✅ Passwort gesetzt."
+            unset PASS1 PASS2
+            break
+        else
+            echo "❌ Passwörter stimmen nicht überein oder sind leer. Versuch es nochmal."
+        fi
+    done
 
 # Speichere User für spätere Docker Group
 echo "$NEW_USER" > /root/.server_setup_user
@@ -86,14 +106,16 @@ echo "$SSH_PORT" > /root/.server_setup_port
 
 
 
-# 4. Verifikation ("Live" Test)
+
+
+# 4. Config schreiben & Verifizieren
 echo -e "\n${YELLOW}🧪 SICHERHEITSPRÜFUNG STARTET...${NC}"
 
 # Verification Port IST der gewählte Port
 VERIFY_PORT=$SSH_PORT
 
 echo "Wir testen die neue Konfiguration direkt am laufenden SSH-Server."
-echo "Deine aktuelle Verbindung bleibt bestehen (Reload statt Restart)."
+echo "Dazu ist ein 'Reload' unumgänglich (deine Verbindung bleibt bestehen)."
 echo ""
 
 # 1. Backup Current Config
@@ -116,8 +138,16 @@ AllowUsers $NEW_USER
 Subsystem sftp /usr/lib/openssh/sftp-server
 EOF
 
-# 3. Reload SSH to apply changes (Does NOT kill active connections)
-echo "   🔄 Reloading SSH configuration..."
+# 3. Check Syntax BEFORE Reload
+echo "   🔍 Checking sshd_config syntax..."
+if ! /usr/sbin/sshd -t -f /etc/ssh/sshd_config; then
+    echo -e "${RED}🚨 Syntax Error! Reverting changes immediately...${NC}"
+    cp /etc/ssh/sshd_config.bak /etc/ssh/sshd_config
+    exit 1
+fi
+
+# 4. Safe Reload
+echo "   � Reloading SSH configuration..."
 systemctl reload ssh
 
 # Define Restore Function (Revert to backup)
